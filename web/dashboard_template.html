@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Glass Ashby Explorer</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+  <style>
+    /* ── Themes: dark (Cursor-like) + light (beige minimal) ── */
+    :root[data-theme="dark"] {
+      --bg: #1e1e1e;
+      --panel: #252526;
+      --sidebar: #252526;
+      --border: #3c3c3c;
+      --text: #cccccc;
+      --muted: #858585;
+      --label: #9d9d9d;
+      --input-bg: #3c3c3c;
+      --input-border: #464647;
+      --accent: #569cd6;
+      --accent-soft: #264f78;
+      --btn-gradient-start: #0e639c;
+      --btn-gradient-end: #6b4d9a;
+      --logo-grad-a: #569cd6;
+      --logo-grad-b: #c586c0;
+      --stat-box: #2d2d2d;
+      --footer-bg: #252526;
+      --plot-paper: #1e1e1e;
+      --plot-bg: #252526;
+      --plot-text: #cccccc;
+      --plot-grid: #3c3c3c;
+      --legend-bg: #252526;
+      --marker-line: rgba(255,255,255,0.85);
+      --table-head: #2d2d2d;
+      --table-hover: rgba(86, 156, 214, 0.08);
+      --badge-bg: #1e3a5f;
+      --badge-border: #569cd6;
+      --badge-text: #9cdcfe;
+    }
+
+    :root[data-theme="light"] {
+      --bg: #f7f5f0;
+      --panel: #faf8f4;
+      --sidebar: #efede6;
+      --border: #ddd8cf;
+      --text: #3d3d3a;
+      --muted: #6b6560;
+      --label: #5c574f;
+      --input-bg: #ffffff;
+      --input-border: #cfc9bf;
+      --accent: #6b5c4c;
+      --accent-soft: #c4b8a8;
+      --btn-gradient-start: #8b7355;
+      --btn-gradient-end: #6b7f6a;
+      --logo-grad-a: #8b7355;
+      --logo-grad-b: #6b7f6a;
+      --stat-box: #faf8f4;
+      --footer-bg: #efede6;
+      --plot-paper: #f7f5f0;
+      --plot-bg: #ffffff;
+      --plot-text: #3d3d3a;
+      --plot-grid: #e5e1d8;
+      --legend-bg: rgba(255,255,255,0.92);
+      --marker-line: rgba(61, 61, 58, 0.35);
+      --table-head: #e8e4db;
+      --table-hover: rgba(139, 115, 85, 0.08);
+      --badge-bg: #ebe6dc;
+      --badge-border: #b5a896;
+      --badge-text: #5c5348;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .header {
+      padding: 20px 28px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: var(--panel);
+    }
+    .logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--logo-grad-a), var(--logo-grad-b));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .header h1 { font-size: 18px; font-weight: 600; color: var(--text); }
+    .header p { font-size: 12px; color: var(--muted); margin-top: 2px; max-width: 520px; }
+    .header-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .theme-toggle {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--input-bg);
+    }
+    .theme-toggle button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .theme-toggle button:hover { color: var(--text); }
+    .theme-toggle button.active {
+      background: var(--accent-soft);
+      color: var(--text);
+      font-weight: 600;
+    }
+    .badge {
+      background: var(--badge-bg);
+      border: 1px solid var(--badge-border);
+      color: var(--badge-text);
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      height: calc(100vh - 73px);
+    }
+
+    .sidebar {
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      padding: 18px 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .section-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .sidebar label.field-label {
+      font-size: 12px;
+      color: var(--label);
+      display: block;
+      margin-bottom: 6px;
+    }
+    .sidebar select {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .sidebar select:hover,
+    .sidebar select:focus { border-color: var(--accent); }
+
+    .scale-group label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--label);
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+    .scale-group input { accent-color: var(--accent); cursor: pointer; }
+
+    .family-list { display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow-y: auto; }
+    .family-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--label);
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+    .family-item:hover { background: var(--input-bg); }
+    .family-item input { cursor: pointer; accent-color: var(--accent); }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .fam-count { margin-left: auto; font-size: 10px; color: var(--muted); }
+
+    .btn-apply {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--btn-gradient-start), var(--btn-gradient-end));
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-apply:hover { opacity: 0.88; }
+
+    :root[data-theme="light"] .btn-apply {
+      color: #faf8f4;
+    }
+
+    .view-tabs {
+      display: flex;
+      gap: 6px;
+    }
+    .view-tabs button {
+      flex: 1;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--muted);
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .view-tabs button.active {
+      border-color: var(--accent);
+      color: var(--text);
+      font-weight: 600;
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    .stats-box {
+      background: var(--stat-box);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .stats-box > p { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .stat-label { font-size: 12px; color: var(--label); }
+    .stat-value { font-size: 13px; font-weight: 600; color: var(--text); }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+      min-height: 500px;
+    }
+    #chart { flex: 1; min-height: 500px; height: 500px; width: 100%; }
+    .footer-bar {
+      padding: 8px 16px;
+      background: var(--footer-bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 11px;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+    .source-tag {
+      margin-left: auto;
+      background: var(--stat-box);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 4px;
+      color: var(--muted);
+    }
+
+    .table-panel {
+      flex: 1;
+      overflow: auto;
+      padding: 12px;
+      min-height: 0;
+    }
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--plot-bg);
+      max-height: calc(100vh - 200px);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+    th {
+      position: sticky;
+      top: 0;
+      background: var(--table-head);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      color: var(--text);
+    }
+    th:hover { color: var(--accent); }
+    tr:hover td { background: var(--table-hover); }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; height: auto; }
+      .sidebar { max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+      #chart { min-height: 360px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo" aria-hidden="true">&#128300;</div>
+    <div>
+      <h1>Glass Ashby Explorer</h1>
+      <p>Open experimental data — Ashby-style maps by glass family (SciGlass-compatible export).</p>
+    </div>
+    <div class="header-actions">
+      <div class="theme-toggle" role="group" aria-label="Theme">
+        <button type="button" id="theme-light" data-set-theme="light">Light</button>
+        <button type="button" id="theme-dark" data-set-theme="dark">Dark</button>
+      </div>
+      <span class="badge">Prototype &middot; traceable rows</span>
+    </div>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div>
+        <div class="section-title">Properties</div>
+        <label class="field-label" for="sel-x">X axis</label>
+        <select id="sel-x"></select>
+        <label class="field-label" for="sel-y" style="margin-top:10px">Y axis</label>
+        <select id="sel-y"></select>
+      </div>
+
+      <div>
+        <div class="section-title">Scale</div>
+        <div class="scale-group">
+          <label><input type="radio" name="scaleX" value="linear" checked /> Linear X</label>
+          <label><input type="radio" name="scaleX" value="log" /> Log X</label>
+          <label><input type="radio" name="scaleY" value="linear" checked /> Linear Y</label>
+          <label><input type="radio" name="scaleY" value="log" /> Log Y</label>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Glass families</div>
+        <div class="family-list" id="family-list"></div>
+      </div>
+
+      <div>
+        <div class="section-title">View</div>
+        <div class="view-tabs">
+          <button type="button" class="active" data-view="scatter">Chart</button>
+          <button type="button" data-view="table">Data table</button>
+        </div>
+      </div>
+
+      <button type="button" class="btn-apply" id="btn-apply">Update diagram</button>
+
+      <div class="stats-box">
+        <p>Visible statistics</p>
+        <div class="stat-row">
+          <span class="stat-label">Glasses shown</span>
+          <span class="stat-value" id="stat-n">&mdash;</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Active families</span>
+          <span class="stat-value" id="stat-f">&mdash;</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Range X</span>
+          <span class="stat-value" id="stat-x">&mdash;</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Range Y</span>
+          <span class="stat-value" id="stat-y">&mdash;</span>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div id="panel-scatter" style="flex:1;display:flex;flex-direction:column;height:500px;overflow:hidden">
+        <div id="chart"></div>
+        <div class="footer-bar">
+          <span id="footer-info">Loading&hellip;</span>
+          <span class="source-tag">Datos: SciGlass Database · EPAM Systems · ODC Open Database License (ODbL) · github.com/epam/SciGlass</span>
+        </div>
+      </div>
+      <div id="panel-table" class="table-panel hidden">
+        <div class="table-wrap">
+          <table>
+            <thead><tr id="thead-row"></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="footer-bar" style="margin-top:8px">
+          <span id="footer-info-table"></span>
+          <span class="source-tag">Sort by clicking column headers</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let RAW_DATA = [];
+
+    /* Physical properties available in the dataset (only those shown in data table) */
+    const METRICS = [
+      { key: "E_GPa", label: "Young's modulus E (GPa)", derive: null },
+      { key: "rho_kg_m3", label: "Density &rho; (kg/m&sup3;)", derive: null },
+      { key: "alpha_1e6_K", label: "Thermal expansion &alpha; (10<sup>&minus;6</sup>/K)", derive: null },
+      { key: "a_mm2_s", label: "Thermal diffusivity a (mm&sup2;/s)", derive: null },
+      { key: "sigma_y_MPa", label: "Yield strength &sigma;<sub>y</sub> (MPa)", derive: null },
+      { key: "cost_vol_eur_m3", label: "Cost per volume (EUR/m&sup3;)", derive: null },
+      { key: "Tg_K", label: "Glass transition T<sub>g</sub> (K)", derive: null },
+      { key: "m_fragility", label: "Liquid fragility m", derive: null },
+    ];
+
+    const FAMILY_COLORS = {
+      silicate: "#6b9ac4",
+      borate: "#c4a574",
+      phosphate: "#7d9f7a",
+      other: "#9a9590",
+      aluminosilicate: "#9b8ab8",
+      lead_silicate: "#c895a0",
+      tellurite: "#7eb8d6",
+      germanate: "#89b892",
+      fluoride: "#6db3a0",
+      chalcogenide: "#d4897a",
+      fluorophosphate: "#d4a574",
+    };
+
+    const FAMILY_COLORS_LIGHT = {
+      silicate: "#4a6fa5",
+      borate: "#a6854f",
+      phosphate: "#5d7a5a",
+      other: "#6b6560",
+      aluminosilicate: "#7a6b96",
+      lead_silicate: "#a6707d",
+      tellurite: "#5a8faf",
+      germanate: "#5e9668",
+      fluoride: "#4a9285",
+      chalcogenide: "#b56b5c",
+      fluorophosphate: "#b8895a",
+    };
+
+    function metricByKey(k) {
+      return METRICS.find((m) => m.key === k) || METRICS[0];
+    }
+
+    // Define rangos log apropiados por propiedad (solo las que están en la tabla)
+    const LOG_RANGES = {
+      "E_GPa":                [0.25, 2.15],   // 1.8 – 140 GPa
+      "rho_kg_m3":            [3.1,  3.8],    // 1200 – 6500 kg/m³
+      "alpha_1e6_K":          [0.3,  2.6],    // 2 – 400 ×10⁻⁶ K⁻¹
+      "a_mm2_s":              [-1.0, 1.0],    // 0.1 – 10 mm²/s
+      "sigma_y_MPa":          [-0.3, 1.3],    // 0.5 – 20 MPa
+      "cost_vol_eur_m3":      [1.0,  5.0],    // 10 – 100000 EUR/m³
+      "Tg_K":                 [2.55, 3.15],   // 350 – 1400 K
+      "m_fragility":          [1.2,  1.8],    // 16 – 63
+    };
+
+    // Ticks legibles por propiedad (solo las que están en la tabla)
+    const LOG_TICKS = {
+      "E_GPa":                { vals: [2,3,5,10,20,50,100],      text: ["2","3","5","10","20","50","100"] },
+      "rho_kg_m3":            { vals: [1500,2000,3000,4000,6000], text: ["1500","2000","3000","4000","6000"] },
+      "alpha_1e6_K":          { vals: [3,5,10,20,50,100,200,400], text: ["3","5","10","20","50","100","200","400"] },
+      "a_mm2_s":              { vals: [0.1,0.2,0.5,1,2,5,10],    text: ["0.1","0.2","0.5","1","2","5","10"] },
+      "sigma_y_MPa":          { vals: [0.5,1,2,5,10,20],         text: ["0.5","1","2","5","10","20"] },
+      "cost_vol_eur_m3":      { vals: [10,100,1000,10000,100000], text: ["10","100","1000","10k","100k"] },
+      "Tg_K":                 { vals: [400,500,700,1000,1400],    text: ["400","500","700","1000","1400"] },
+      "m_fragility":          { vals: [16,20,30,50,63],          text: ["16","20","30","50","63"] },
+    };
+
+    function getLogRangeForMetric(metricKey) {
+      return LOG_RANGES[metricKey] || [0, 3]; // fallback range
+    }
+
+    function getLogTicksForMetric(metricKey) {
+      return LOG_TICKS[metricKey] || {};
+    }
+
+    function getMetricValue(r, m) {
+      if (m.derive) return m.derive(r);
+      return r[m.key];
+    }
+
+    function validPairs(rows, xk, yk) {
+      const mx = metricByKey(xk);
+      const my = metricByKey(yk);
+      return rows.filter((r) => {
+        const x = getMetricValue(r, mx);
+        const y = getMetricValue(r, my);
+        return x != null && y != null && !Number.isNaN(x) && !Number.isNaN(y) && x > 0 && y > 0;
+      });
+    }
+
+    function uniqueFamilies(rows) {
+      return [...new Set(rows.map((r) => r.family || "other"))].sort();
+    }
+
+    function getPlotTheme() {
+      const s = getComputedStyle(document.documentElement);
+      return {
+        paper: s.getPropertyValue("--plot-paper").trim(),
+        plot: s.getPropertyValue("--plot-bg").trim(),
+        text: s.getPropertyValue("--plot-text").trim(),
+        grid: s.getPropertyValue("--plot-grid").trim(),
+        legend: s.getPropertyValue("--legend-bg").trim(),
+      };
+    }
+
+    function familyColor(fam) {
+      const light = document.documentElement.getAttribute("data-theme") === "light";
+      const pal = light ? FAMILY_COLORS_LIGHT : FAMILY_COLORS;
+      return pal[fam] || pal.other;
+    }
+
+    function quantile(arr, q) {
+      const sorted = [...arr].sort((a, b) => a - b);
+      if (!sorted.length) return 0;
+      const pos = (sorted.length - 1) * q;
+      const base = Math.floor(pos);
+      const rest = pos - base;
+      return sorted[base + 1] !== undefined
+        ? sorted[base] + rest * (sorted[base + 1] - sorted[base])
+        : sorted[base];
+    }
+
+    function fillSelect(sel, selectedKey) {
+      sel.innerHTML = METRICS.map(
+        (m) => `<option value="${m.key}" ${m.key === selectedKey ? "selected" : ""}>${m.label}</option>`
+      ).join("");
+    }
+
+    function buildFamilyList(rows) {
+      const host = document.getElementById("family-list");
+      const fams = uniqueFamilies(rows);
+      const counts = {};
+      for (const r of rows) {
+        const f = r.family || "other";
+        counts[f] = (counts[f] || 0) + 1;
+      }
+      host.innerHTML = "";
+      fams.forEach((f, i) => {
+        const id = `fam_cb_${i}`;
+        const div = document.createElement("div");
+        div.className = "family-item";
+        div.innerHTML = `
+          <input type="checkbox" id="${id}" class="fam-cb" value="${f.replace(/"/g, "&quot;")}" checked />
+          <span class="dot" style="background:${familyColor(f)}"></span>
+          <label for="${id}" style="cursor:pointer;flex:1;margin:0">${f}</label>
+          <span class="fam-count">${counts[f] ?? 0}</span>`;
+        host.appendChild(div);
+      });
+    }
+
+    function getSelectedFamilies() {
+      return [...document.querySelectorAll(".fam-cb:checked")].map((c) => c.value);
+    }
+
+    function filteredRows() {
+      const fams = getSelectedFamilies();
+      return RAW_DATA.filter((r) => fams.includes(r.family));
+    }
+
+    function scaleXY() {
+      const sx = document.querySelector('input[name="scaleX"]:checked')?.value || "linear";
+      const sy = document.querySelector('input[name="scaleY"]:checked')?.value || "linear";
+      return { sx, sy };
+    }
+
+    function buildChart(isManualUpdate = false) {
+      const xk = document.getElementById("sel-x").value;
+      const yk = document.getElementById("sel-y").value;
+      const { sx, sy } = scaleXY();
+      const rows = filteredRows();
+      const mx = metricByKey(xk);
+      const my = metricByKey(yk);
+      const pt = getPlotTheme();
+      const isInitialLoad = !window.chartInitialized && !isManualUpdate;
+      const xRange = sx === "log" && !isInitialLoad ? getLogRangeForMetric(xk) : null;
+      const yRange = sy === "log" && !isInitialLoad ? getLogRangeForMetric(yk) : null;
+      const xTicks = sx === "log" && !isInitialLoad ? getLogTicksForMetric(xk) : {};
+      const yTicks = sy === "log" && !isInitialLoad ? getLogTicksForMetric(yk) : {};
+      if (!isInitialLoad) window.chartInitialized = true;
+
+      const byFam = {};
+      for (const r of rows) {
+        const f = r.family || "other";
+        if (!byFam[f]) byFam[f] = [];
+        byFam[f].push(r);
+      }
+
+      const traces = [];
+      let totalN = 0;
+      let activeFams = 0;
+      const allX = [];
+      const allY = [];
+
+      for (const [fam, list] of Object.entries(byFam)) {
+        const pts = validPairs(list, xk, yk);
+        if (!pts.length) continue;
+        activeFams++;
+        const xs = pts.map((p) => getMetricValue(p, mx));
+        const ys = pts.map((p) => getMetricValue(p, my));
+        allX.push(...xs);
+        allY.push(...ys);
+        totalN += pts.length;
+        const col = familyColor(fam);
+        const ml = document.documentElement.getAttribute("data-theme") === "light"
+          ? "rgba(61,61,58,0.25)" : "rgba(255,255,255,0.9)";
+
+        traces.push({
+          type: "scatter",
+          mode: "markers",
+          name: fam,
+          x: xs,
+          y: ys,
+          text: pts.map((p) => `${p.source_id}<br>${p.material_label || ""}`),
+          hovertemplate: "<b>" + fam + "</b><br>%{text}<br>" + stripHtml(mx.label) + ": %{x:.4g}<br>" + stripHtml(my.label) + ": %{y:.4g}<extra></extra>",
+          marker: { size: 6, color: col, opacity: 0.45, line: { width: 0.5, color: ml } },
+          legendgroup: fam,
+        });
+
+        if (pts.length >= 5) {
+          const x10 = quantile(xs, 0.1), x90 = quantile(xs, 0.9);
+          const y10 = quantile(ys, 0.1), y90 = quantile(ys, 0.9);
+          const cx = (x10 + x90) / 2, cy = (y10 + y90) / 2;
+          const rx = Math.max((x90 - x10) / 2, 1e-12);
+          const ry = Math.max((y90 - y10) / 2, 1e-12);
+          const theta = Array.from({ length: 48 }, (_, i) => (i * 2 * Math.PI) / 47);
+          const ex = theta.map((t) => cx + rx * Math.cos(t));
+          const ey = theta.map((t) => cy + ry * Math.sin(t));
+          const fillRgb = hexToRgba(col, 0.14);
+          traces.push({
+            x: ex,
+            y: ey,
+            mode: "lines",
+            type: "scatter",
+            name: fam,
+            legendgroup: fam,
+            showlegend: false,
+            fill: "toself",
+            fillcolor: fillRgb,
+            line: { color: col, width: 1.2 },
+            hoverinfo: "skip",
+          });
+          const short = fam.length > 14 ? fam.slice(0, 12) + "…" : fam;
+          traces.push({
+            x: [cx],
+            y: [cy],
+            mode: "text",
+            type: "scatter",
+            text: [short],
+            textfont: { color: col, size: 10 },
+            legendgroup: fam,
+            showlegend: false,
+            hoverinfo: "skip",
+          });
+        }
+      }
+
+      document.getElementById("stat-n").textContent = totalN.toLocaleString();
+      document.getElementById("stat-f").textContent = String(activeFams);
+      if (allX.length) {
+        document.getElementById("stat-x").textContent = `${fmtRange(Math.min(...allX), Math.max(...allX))}`;
+        document.getElementById("stat-y").textContent = `${fmtRange(Math.min(...allY), Math.max(...allY))}`;
+      } else {
+        document.getElementById("stat-x").textContent = "\u2014";
+        document.getElementById("stat-y").textContent = "\u2014";
+      }
+      document.getElementById("footer-info").textContent = totalN
+        ? `${totalN.toLocaleString()} glasses · ${activeFams} families · ${stripHtml(mx.label)} vs ${stripHtml(my.label)}`
+        : "No points for this axis pair or filters — try other properties or enable more families.";
+
+      const emptyAnn = !traces.length
+        ? [{
+            text: "No visible data for this selection",
+            xref: "paper",
+            yref: "paper",
+            x: 0.5,
+            y: 0.55,
+            showarrow: false,
+            font: { size: 14, color: pt.text },
+          }]
+        : [];
+
+      const layout = {
+        paper_bgcolor: pt.paper,
+        plot_bgcolor: pt.plot,
+        font: { color: pt.text, family: "Segoe UI, system-ui, sans-serif", size: 12 },
+        margin: { t: 16, r: 20, b: 56, l: 72 },
+        xaxis: {
+          title: { text: mx.label, standoff: 10 },
+          type: sx === "log" ? "log" : "linear",
+          ...(sx === "log" && xRange && !isInitialLoad ? {
+            autorange: false,
+            range: xRange,
+            tickvals: xTicks.vals,
+            ticktext: xTicks.text,
+          } : { autorange: true }),
+          gridcolor: pt.grid,
+          linecolor: pt.grid,
+          zerolinecolor: pt.grid,
+        },
+        yaxis: {
+          title: { text: my.label, standoff: 10 },
+          type: sy === "log" ? "log" : "linear",
+          ...(sy === "log" && yRange && !isInitialLoad ? {
+            autorange: false,
+            range: yRange,
+            tickvals: yTicks.vals,
+            ticktext: yTicks.text,
+          } : { autorange: true }),
+          gridcolor: pt.grid,
+          linecolor: pt.grid,
+          zerolinecolor: pt.grid,
+        },
+        yaxis: {
+          title: { text: my.label, standoff: 10 },
+          type: sy === "log" ? "log" : "linear",
+          ...(sy === "log" ? {
+            autorange: false,
+            range: getLogRangeForMetric(yk)
+          } : {}),
+          gridcolor: pt.grid,
+          linecolor: pt.grid,
+          zerolinecolor: pt.grid,
+          ...(sy === "log" && yk === "alpha_1e6_K" ? {
+            tickvals: [3, 4, 5, 6, 7, 8, 9, 10],
+            ticktext: ["3", "4", "5", "6", "7", "8", "9", "10"]
+          } : {}),
+        },
+        legend: {
+          bgcolor: pt.legend,
+          bordercolor: pt.grid,
+          borderwidth: 1,
+          font: { size: 11 },
+          x: 0.01,
+          y: 0.99,
+          xanchor: "left",
+          yanchor: "top",
+        },
+        hovermode: "closest",
+        annotations: emptyAnn.concat([{
+          text: "Glass Ashby Explorer",
+          xref: "paper",
+          yref: "paper",
+          x: 1,
+          y: 0,
+          xanchor: "right",
+          yanchor: "bottom",
+          font: { size: 9, color: pt.grid },
+          showarrow: false,
+        }]),
+      };
+
+      Plotly.react("chart", traces.length ? traces : [{ type: "scatter", x: [], y: [], showlegend: false }], layout, {
+        responsive: true,
+        displaylogo: false,
+        displayModeBar: true,
+        modeBarButtonsToRemove: ["lasso2d", "select2d"],
+        toImageButtonOptions: { format: "png", filename: "glass_ashby_chart", scale: 2 },
+      });
+    }
+
+    function stripHtml(s) {
+      const d = document.createElement("div");
+      d.innerHTML = s;
+      return d.textContent || d.innerText || "";
+    }
+
+    function fmtRange(lo, hi) {
+      const f = (v) => (Math.abs(v) >= 100 ? v.toFixed(0) : v.toPrecision(3));
+      return `${f(lo)} \u2013 ${f(hi)}`;
+    }
+
+    function hexToRgba(hex, a) {
+      const h = hex.replace("#", "");
+      const n = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+      const r = parseInt(n.slice(0, 2), 16);
+      const g = parseInt(n.slice(2, 4), 16);
+      const b = parseInt(n.slice(4, 6), 16);
+      return `rgba(${r},${g},${b},${a})`;
+    }
+
+    let sortCol = "source_id";
+    let sortAsc = true;
+
+    function fmt(v) {
+      if (v == null || Number.isNaN(v)) return "\u2014";
+      if (typeof v !== "number") return String(v);
+      if (Math.abs(v) >= 1000) return v.toFixed(0);
+      if (Math.abs(v) >= 10) return v.toFixed(2);
+      return v.toPrecision(3);
+    }
+
+    function renderTable() {
+      const rows = filteredRows();
+      const cols = [
+        { key: "source_id", label: "ID" },
+        { key: "material_label", label: "Material" },
+        { key: "family", label: "Family" },
+        { key: "E_GPa", label: "E (GPa)" },
+        { key: "rho_kg_m3", label: "\u03c1 (kg/m\u00b3)" },
+        { key: "alpha_1e6_K", label: "\u03b1 (10\u207b\u2076/K)" },
+        { key: "a_mm2_s", label: "a (mm\u00b2/s)" },
+        { key: "sigma_y_MPa", label: "\u03c3_y (MPa)" },
+        { key: "cost_vol_eur_m3", label: "Cost (EUR/m\u00b3)" },
+        { key: "Tg_K", label: "T_g (K)" },
+        { key: "m_fragility", label: "m" },
+      ];
+
+      const thead = document.getElementById("thead-row");
+      thead.innerHTML = cols
+        .map((c) => `<th data-key="${c.key}">${c.label}${sortCol === c.key ? (sortAsc ? " \u25b2" : " \u25bc") : ""}</th>`)
+        .join("");
+
+      thead.querySelectorAll("th").forEach((th) => {
+        th.onclick = () => {
+          const k = th.getAttribute("data-key");
+          if (sortCol === k) sortAsc = !sortAsc;
+          else {
+            sortCol = k;
+            sortAsc = true;
+          }
+          renderTable();
+        };
+      });
+
+      const sorted = [...rows].sort((a, b) => {
+        const va = a[sortCol];
+        const vb = b[sortCol];
+        if (va == null && vb == null) return 0;
+        if (va == null) return 1;
+        if (vb == null) return -1;
+        if (typeof va === "number" && typeof vb === "number") {
+          return sortAsc ? va - vb : vb - va;
+        }
+        return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+      });
+
+      document.getElementById("tbody").innerHTML = sorted
+        .map(
+          (r) =>
+            `<tr>
+              <td>${r.source_id}</td>
+              <td>${r.material_label ?? "\u2014"}</td>
+              <td>${r.family}</td>
+              <td>${fmt(r.E_GPa)}</td>
+              <td>${fmt(r.rho_kg_m3)}</td>
+              <td>${fmt(r.alpha_1e6_K)}</td>
+              <td>${fmt(r.a_mm2_s)}</td>
+              <td>${fmt(r.sigma_y_MPa)}</td>
+              <td>${fmt(r.cost_vol_eur_m3)}</td>
+              <td>${fmt(r.Tg_K)}</td>
+              <td>${fmt(r.m_fragility)}</td>
+            </tr>`
+        )
+        .join("");
+      document.getElementById("footer-info-table").textContent = `${rows.length.toLocaleString()} rows (filtered)`;
+    }
+
+    function setTheme(t) {
+      document.documentElement.setAttribute("data-theme", t);
+      localStorage.setItem("glass-ashby-theme", t);
+      document.getElementById("theme-light").classList.toggle("active", t === "light");
+      document.getElementById("theme-dark").classList.toggle("active", t === "dark");
+      buildFamilyList(RAW_DATA);
+      if (!document.getElementById("panel-table").classList.contains("hidden")) renderTable();
+      else buildChart();
+    }
+
+    function initDashboard() {
+      const saved = localStorage.getItem("glass-ashby-theme");
+      if (saved === "light" || saved === "dark") {
+        document.documentElement.setAttribute("data-theme", saved);
+      }
+      document.getElementById("theme-light").classList.toggle("active", document.documentElement.getAttribute("data-theme") === "light");
+      document.getElementById("theme-dark").classList.toggle("active", document.documentElement.getAttribute("data-theme") === "dark");
+
+      document.getElementById("theme-light").addEventListener("click", () => setTheme("light"));
+      document.getElementById("theme-dark").addEventListener("click", () => setTheme("dark"));
+
+      /* Default axes: X = Density, Y = Young's modulus */
+      fillSelect(document.getElementById("sel-x"), "rho_kg_m3");
+      fillSelect(document.getElementById("sel-y"), "E_GPa");
+      buildFamilyList(RAW_DATA);
+
+    document.getElementById("sel-x").addEventListener("change", () => buildChart(true));
+    document.getElementById("sel-y").addEventListener("change", () => buildChart(true));
+    document.querySelectorAll('input[name="scaleX"], input[name="scaleY"]').forEach((r) => {
+      r.addEventListener("change", () => buildChart(true));
+    });
+    document.getElementById("show-legend").addEventListener("change", () => buildChart(true));
+    document.getElementById("family-list").addEventListener("change", () => {
+      if (!document.getElementById("panel-table").classList.contains("hidden")) renderTable();
+      else buildChart(true);
+    });
+    document.getElementById("btn-apply").addEventListener("click", () => {
+      if (!document.getElementById("panel-table").classList.contains("hidden")) renderTable();
+      else buildChart(true);
+    });
+      document.getElementById("family-list").addEventListener("change", () => {
+        if (!document.getElementById("panel-table").classList.contains("hidden")) renderTable();
+        else buildChart();
+      });
+      document.getElementById("btn-apply").addEventListener("click", () => {
+        if (!document.getElementById("panel-table").classList.contains("hidden")) renderTable();
+        else buildChart();
+      });
+
+      document.querySelectorAll(".view-tabs button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".view-tabs button").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          const v = btn.getAttribute("data-view");
+          document.getElementById("panel-scatter").classList.toggle("hidden", v !== "scatter");
+          document.getElementById("panel-table").classList.toggle("hidden", v !== "table");
+          if (v === "scatter") buildChart();
+          else renderTable();
+        });
+      });
+
+      buildChart();
+    }
+
+    __DASHBOARD_BOOTSTRAP__
+  </script>
+</body>
+</html>

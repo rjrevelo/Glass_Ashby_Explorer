@@ -69,4 +69,3 @@ If you wish to contribute to this project, please consider:
 ## Licenses
 
 - **Data**: SciGlass Database - ODC Open Database License (ODbL) v1.0
-- **Code**: [Specify code license if applicable]
